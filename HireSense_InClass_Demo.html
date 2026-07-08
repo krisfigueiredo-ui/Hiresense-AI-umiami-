@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>HireSense AI — Live Demo</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F0F4F9;
+  --white:#FFFFFF;
+  --surface:#F7FAFF;
+  --border:#DDE3EE;
+  --border2:#C8D3E8;
+  --navy:#0F1F3D;
+  --body:#374151;
+  --muted:#6B7A99;
+  --accent:#2563EB;
+  --accent-lt:#EFF6FF;
+  --teal:#0D9488;
+  --teal-lt:#F0FDFA;
+  --purple:#7C3AED;
+  --purple-lt:#F5F3FF;
+  --green:#16A34A;
+  --green-lt:#F0FDF4;
+  --amber:#D97706;
+  --amber-lt:#FFFBEB;
+  --red:#DC2626;
+  --red-lt:#FEF2F2;
+  --openai:#059669;
+  --anthropic:#C2410C;
+}
+body{background:var(--bg);color:var(--navy);font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;min-height:100vh;display:flex;flex-direction:column;font-size:14px}
+
+/* ── TOP BAR ── */
+.topbar{background:var(--navy);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;flex-shrink:0;gap:12px}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-mark{width:32px;height:32px;background:linear-gradient(135deg,#2563EB,#7C3AED);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.logo-name{font-size:17px;font-weight:700;color:#fff;letter-spacing:-.01em}
+.logo-sub{font-size:10px;color:#93C5FD;letter-spacing:.06em;text-transform:uppercase}
+.topbar-badges{display:flex;gap:6px;flex-wrap:wrap}
+.tbadge{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:500;white-space:nowrap}
+
+/* ── LAYOUT ── */
+.layout{display:flex;flex:1;overflow:hidden;height:calc(100vh - 56px)}
+.sidebar{width:310px;flex-shrink:0;background:var(--white);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
+.sidebar-inner{padding:16px;display:flex;flex-direction:column;gap:12px}
+.right{flex:1;overflow-y:auto;padding:20px;background:var(--bg)}
+
+/* ── CARDS ── */
+.panel{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px}
+.slabel{font-size:10px;color:var(--muted);letter-spacing:.07em;font-weight:600;text-transform:uppercase;margin-bottom:8px}
+
+/* ── PROVIDER ── */
+.prov-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
+.prov-btn{padding:9px 4px;border-radius:7px;border:1.5px solid var(--border);background:var(--surface);color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;text-align:center;line-height:1.35}
+.prov-btn:hover{border-color:var(--border2);color:var(--body)}
+.prov-btn.p-openai{border-color:var(--openai);background:#ECFDF5;color:var(--openai)}
+.prov-btn.p-anthropic{border-color:var(--anthropic);background:#FFF7ED;color:var(--anthropic)}
+.prov-btn.p-both{border-color:var(--accent);background:var(--accent-lt);color:var(--accent)}
+
+/* ── FORM ── */
+.field{margin-bottom:9px}
+.field-lbl{font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:500;display:flex;align-items:center;gap:5px}
+input[type=text],input[type=password],select,textarea{width:100%;padding:8px 10px;background:var(--surface);color:var(--navy);border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);background:#fff}
+textarea{resize:vertical;line-height:1.5}
+select{cursor:pointer}
+.key-block{display:none}
+.key-block.show{display:block}
+
+/* ── JD TABS ── */
+.jd-tabs{display:flex;gap:4px;margin-bottom:8px}
+.jd-tab{padding:5px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface);color:var(--muted);font-size:11px;font-weight:500;cursor:pointer;transition:all .15s}
+.jd-tab.active{border-color:var(--accent);background:var(--accent-lt);color:var(--accent)}
+.jd-panel{display:none}
+.jd-panel.active{display:block}
+.url-row{display:flex;gap:5px}
+.url-row input{flex:1}
+.fetch-btn{padding:8px 10px;background:var(--accent-lt);border:1.5px solid var(--accent);border-radius:6px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;transition:opacity .15s}
+.fetch-btn:hover{opacity:.8}
+.fetch-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── CANDIDATE LIST ── */
+.drop-zone{border:1.5px dashed var(--border2);border-radius:8px;padding:14px;text-align:center;cursor:pointer;transition:all .15s;background:var(--surface)}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--accent);background:var(--accent-lt)}
+.r-chip{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;transition:all .15s;margin-bottom:5px}
+.r-chip:hover{border-color:var(--border2)}
+.r-chip.selected{border-color:var(--accent);background:var(--accent-lt)}
+.r-chip input[type=checkbox]{accent-color:var(--accent);width:13px;height:13px;flex-shrink:0;cursor:pointer}
+.avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0}
+.r-name{font-size:12px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--navy)}
+.r-meta{font-size:10px;color:var(--muted)}
+.r-remove{background:none;border:none;color:var(--muted);cursor:pointer;padding:2px 5px;border-radius:4px;font-size:12px;flex-shrink:0;line-height:1}
+.r-remove:hover{color:var(--red);background:var(--red-lt)}
+
+/* ── RUN BUTTON ── */
+.run-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--accent),#7C3AED);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;transition:opacity .15s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 2px 8px rgba(37,99,235,.25)}
+.run-btn:hover{opacity:.9}
+.run-btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+#status-msg{font-size:11px;color:var(--muted);text-align:center;min-height:16px;margin-top:6px}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:50px 24px;max-width:540px;margin:0 auto}
+.empty-icon{font-size:52px;margin-bottom:14px}
+.empty-title{font-size:20px;font-weight:700;color:var(--navy);margin-bottom:8px}
+.empty-sub{font-size:13px;color:var(--muted);line-height:1.65;margin-bottom:22px}
+.feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:left}
+.feat{background:var(--white);border:1.5px solid var(--border);border-radius:9px;padding:11px 13px}
+.feat-icon{font-size:18px;margin-bottom:5px}
+.feat-title{font-size:12px;font-weight:600;color:var(--navy);margin-bottom:2px}
+.feat-desc{font-size:11px;color:var(--muted);line-height:1.45}
+
+/* ── LOADING ── */
+.loading-wrap{text-align:center;padding:50px 20px}
+.spinner{width:38px;height:38px;border:2.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-txt{font-size:13px;color:var(--muted)}
+.pipe-mini{display:flex;align-items:center;gap:6px;justify-content:center;margin-top:14px;flex-wrap:wrap;font-size:11px;color:var(--muted)}
+.pdot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:background .3s}
+.pdot.done{background:var(--green)}
+.pdot.active{background:var(--accent)}
+
+/* ── RESULTS ── */
+.metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.metric{background:var(--white);border:1.5px solid var(--border);border-radius:10px;padding:14px;text-align:center;box-shadow:0 1px 3px rgba(15,31,61,.06)}
+.m-val{font-size:26px;font-weight:700;line-height:1}
+.m-lbl{font-size:10px;color:var(--muted);margin-top:4px;font-weight:500}
+.pipe-bar{background:var(--white);border:1.5px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;font-size:11px;color:var(--muted);font-weight:500}
+.pipe-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0}
+.tabs-bar{display:flex;gap:3px;margin-bottom:14px;border-bottom:2px solid var(--border);padding-bottom:0}
+.tab-btn{padding:9px 18px;font-size:12px;font-weight:600;color:var(--muted);border:none;background:none;cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-2px;transition:all .15s}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+
+/* ── CANDIDATE CARDS ── */
+.ccard{background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;cursor:pointer;transition:all .2s;box-shadow:0 1px 3px rgba(15,31,61,.06)}
+.ccard:hover{border-color:var(--border2);box-shadow:0 3px 10px rgba(15,31,61,.1)}
+.ccard.open{border-color:var(--accent);box-shadow:0 3px 12px rgba(37,99,235,.12)}
+.ccard-hd{display:flex;align-items:center;gap:10px}
+.rank-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.c-info{flex:1;min-width:0}
+.c-name{font-size:14px;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.c-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.c-score-wrap{text-align:right;flex-shrink:0}
+.c-score-num{font-size:28px;font-weight:700;line-height:1}
+.c-score-lbl{font-size:10px;color:var(--muted);font-weight:500}
+.sbar-wrap{width:80px;height:4px;background:var(--border);border-radius:2px;margin-top:5px;margin-left:auto;overflow:hidden}
+.sbar-fill{height:4px;border-radius:2px}
+.ccard-body{display:none;margin-top:14px;padding-top:12px;border-top:1.5px solid var(--border)}
+.ccard-body.open{display:block}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:12px}
+.detail-block h4{font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.detail-block p{font-size:12px;color:var(--body);line-height:1.55}
+.reasoning-box{background:var(--surface);border-radius:7px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--body);line-height:1.55}
+.tags-wrap{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.skill-tag{font-size:11px;padding:3px 9px;border-radius:20px;white-space:nowrap;font-weight:500}
+.qs-list{display:flex;flex-direction:column;gap:7px}
+.q-item{display:flex;align-items:flex-start;gap:8px}
+.q-num{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;flex-shrink:0;margin-top:1px}
+.q-text{font-size:12px;color:var(--body);line-height:1.4}
+.prov-pill{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600}
+.rag-ctx-wrap details{margin-top:10px}
+.rag-ctx-wrap summary{font-size:10px;color:var(--muted);cursor:pointer;font-weight:500;letter-spacing:.04em}
+.rag-ctx{background:var(--navy);border-radius:7px;padding:10px 12px;font-size:10px;color:#93C5FD;font-family:monospace;line-height:1.55;margin-top:6px;max-height:90px;overflow-y:auto;white-space:pre-wrap}
+
+/* ── COMPARE ── */
+.cmp-wrap{background:var(--white);border:1.5px solid var(--border);border-radius:10px;padding:16px}
+.cmp-table{width:100%;border-collapse:collapse;margin-top:10px}
+.cmp-table th{font-size:10px;color:var(--muted);letter-spacing:.06em;padding:9px 12px;border-bottom:2px solid var(--border);text-align:center;font-weight:600}
+.cmp-table th:first-child{text-align:left}
+.cmp-table td{padding:9px 12px;font-size:13px;border-bottom:1px solid var(--border);text-align:center}
+.cmp-table td:first-child{text-align:left;color:var(--navy);font-weight:600}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+input[type=file]{display:none}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-mark">⚡</div>
+    <div>
+      <div class="logo-name">HireSense AI</div>
+      <div class="logo-sub">RAG-Powered Talent Intelligence</div>
+    </div>
+  </div>
+  <div class="topbar-badges">
+    <span class="tbadge" style="background:rgba(59,130,246,.2);color:#93C5FD">RAG Pipeline</span>
+    <span class="tbadge" style="background:rgba(13,148,136,.2);color:#5EEAD4">Cosine Similarity</span>
+    <span class="tbadge" style="background:rgba(124,58,237,.2);color:#C4B5FD">LLM Scoring</span>
+    <span class="tbadge" style="background:rgba(5,150,105,.2);color:#6EE7B7">OpenAI</span>
+    <span class="tbadge" style="background:rgba(194,65,12,.2);color:#FED7AA">Claude</span>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-inner">
+
+      <!-- Provider -->
+      <div class="panel">
+        <div class="slabel">LLM Provider</div>
+        <div class="prov-grid">
+          <div class="prov-btn p-openai" id="btn-openai" onclick="setProvider('openai')">🟢<br>ChatGPT</div>
+          <div class="prov-btn" id="btn-anthropic" onclick="setProvider('anthropic')">🟠<br>Claude</div>
+          <div class="prov-btn" id="btn-both" onclick="setProvider('both')">⚡<br>Both</div>
+        </div>
+      </div>
+
+      <!-- Keys -->
+      <div class="panel">
+        <div class="slabel">API Keys</div>
+        <div class="key-block show" id="kg-oai">
+          <div class="field">
+            <div class="field-lbl" style="color:var(--openai)">OpenAI Key</div>
+            <input type="password" id="oai-key" placeholder="sk-...">
+          </div>
+          <div class="field">
+            <div class="field-lbl">Model</div>
+            <select id="oai-model">
+              <option>gpt-4o</option><option>gpt-4o-mini</option>
+              <option>gpt-4-turbo</option><option>gpt-3.5-turbo</option>
+            </select>
+          </div>
+        </div>
+        <div class="key-block" id="kg-ant">
+          <div class="field">
+            <div class="field-lbl" style="color:var(--anthropic)">Anthropic Key</div>
+            <input type="password" id="ant-key" placeholder="sk-ant-...">
+          </div>
+          <div class="field">
+            <div class="field-lbl">Model</div>
+            <select id="ant-model">
+              <option value="claude-opus-4-5">claude-opus-4-5</option>
+              <option value="claude-sonnet-4-5">claude-sonnet-4-5</option>
+              <option value="claude-haiku-4-5-20251001">claude-haiku-4-5</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- JD -->
+      <div class="panel">
+        <div class="slabel">Job Description</div>
+        <div class="jd-tabs">
+          <div class="jd-tab active" onclick="setJDTab('paste')">📋 Paste</div>
+          <div class="jd-tab" onclick="setJDTab('url')">🌐 From URL</div>
+        </div>
+        <div class="jd-panel active" id="jdp-paste">
+          <textarea id="jd-text" rows="7" placeholder="Paste a job description here...">Senior ML Engineer with 5+ years experience. Must have: Python, PyTorch, production LLM deployment, NLP expertise, RAG systems, vector databases (ChromaDB, Pinecone). Nice to have: MLOps, cloud platforms (AWS/GCP), team leadership. MS/PhD preferred.</textarea>
+        </div>
+        <div class="jd-panel" id="jdp-url">
+          <div class="field-lbl" style="margin-bottom:5px">Company careers page URL</div>
+          <div class="url-row" style="margin-bottom:7px">
+            <input type="text" id="jd-url-input" placeholder="https://careers.company.com/job/...">
+            <button class="fetch-btn" id="fetch-btn" onclick="fetchJD()">Fetch</button>
+          </div>
+          <div id="fetch-status" style="font-size:11px;color:var(--muted);margin-bottom:6px"></div>
+          <textarea id="jd-fetched" rows="6" placeholder="Fetched job description will appear here — edit freely..."></textarea>
+        </div>
+      </div>
+
+      <!-- Candidates -->
+      <div class="panel">
+        <div class="slabel">Candidates</div>
+        <div class="drop-zone" onclick="document.getElementById('file-input').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+          <div style="font-size:22px;margin-bottom:5px">📄</div>
+          <div style="font-size:12px;color:var(--body)">Drop PDF / TXT resumes here or <span style="color:var(--accent);font-weight:600">click to upload</span></div>
+          <div style="font-size:10px;color:var(--muted);margin-top:3px">Multiple files OK</div>
+        </div>
+        <input type="file" id="file-input" accept=".pdf,.txt" multiple onchange="handleFiles(event)">
+        <div style="font-size:10px;color:var(--muted);margin:10px 0 6px;font-weight:600;letter-spacing:.04em;text-transform:uppercase">Sample Candidates</div>
+        <div id="r-list"></div>
+      </div>
+
+      <button class="run-btn" id="run-btn" onclick="runAnalysis()">▶  Run HireSense Analysis</button>
+      <div id="status-msg"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right" id="right-panel">
+    <div class="empty">
+      <div class="empty-icon">🎯</div>
+      <div class="empty-title">HireSense AI</div>
+      <div class="empty-sub">Select a provider, enter your API key, paste or fetch a job description, then run the RAG-powered analysis.</div>
+      <div class="feature-grid">
+        <div class="feat"><div class="feat-icon">🧠</div><div class="feat-title">Semantic Matching</div><div class="feat-desc">Cosine similarity on embedded resume chunks — not keyword search</div></div>
+        <div class="feat"><div class="feat-icon">📊</div><div class="feat-title">Explainable Scores</div><div class="feat-desc">Every candidate gets strengths, gaps, reasoning, and a 0–100 score</div></div>
+        <div class="feat"><div class="feat-icon">📄</div><div class="feat-title">Resume Upload</div><div class="feat-desc">Drag & drop real PDF or TXT resumes for analysis</div></div>
+        <div class="feat"><div class="feat-icon">🌐</div><div class="feat-title">URL Job Fetch</div><div class="feat-desc">Auto-fetch JD text from any public careers page</div></div>
+        <div class="feat"><div class="feat-icon">⚡</div><div class="feat-title">Dual LLM</div><div class="feat-desc">Run ChatGPT + Claude and compare scores side-by-side</div></div>
+        <div class="feat"><div class="feat-icon">💬</div><div class="feat-title">Interview Questions</div><div class="feat-desc">3 AI-generated interview questions per candidate</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Sample candidates ──────────────────────────────────────────────────────
+const SAMPLES=[
+  {id:'s0',name:'Aisha Khan',ini:'AK',role:'ML Engineer',years:6,color:'#2563EB',text:'6 years as a Senior ML Engineer. Expert in Python, PyTorch, TensorFlow. Built production NLP pipelines using transformer models (BERT, GPT, T5). Deployed LLMs to AWS SageMaker and GCP Vertex AI. Led a team of 3 engineers. Deep experience with RAG systems, vector databases (ChromaDB, Pinecone, Weaviate). Strong MLOps: CI/CD for ML, model monitoring, drift detection. Published 2 NLP papers. MS Computer Science, Stanford. Proficient in LangChain, HuggingFace, FastAPI, Docker, Kubernetes.'},
+  {id:'s1',name:'Marco Rivera',ini:'MR',role:'Data Scientist',years:4,color:'#16A34A',text:'4 years as a Data Scientist. Python, scikit-learn, pandas, XGBoost. NLP: text classification, sentiment analysis using NLTK and spaCy. No production LLM deployment. SQL, Spark, Airflow. BS Statistics, UCLA. Learning LangChain and HuggingFace.'},
+  {id:'s2',name:'Jamie Park',ini:'JP',role:'AI Researcher',years:3,color:'#D97706',text:'3 years AI research at a university NLP lab. Deep expertise in transformers, attention mechanisms, fine-tuning LLMs. Published 4 papers. Python, PyTorch, HuggingFace. RAG prototypes with FAISS. Limited production/cloud experience. PhD candidate, MIT CSAIL.'},
+  {id:'s3',name:'Sofia Li',ini:'SL',role:'NLP Engineer',years:5,color:'#7C3AED',text:'5 years NLP engineering. Expert in spaCy, HuggingFace Transformers, NLTK. Built NER, summarization, QA systems at scale. Python, PyTorch. FastAPI on GCP. Semantic search, ChromaDB, LangChain. RAG pipelines for enterprise Q&A. BS CS, UT Austin.'},
+  {id:'s4',name:'Devon Walsh',ini:'DW',role:'Software Engineer',years:7,color:'#0D9488',text:'7 years software engineering. Python, Java, Go, distributed systems. Kubernetes, Docker, Terraform, AWS, Azure. No LLM or NLP experience. System design. BS Computer Engineering, Georgia Tech.'},
+  {id:'s5',name:'Priya Nair',ini:'PN',role:'MLOps Engineer',years:4,color:'#C2410C',text:'4 years MLOps engineering. ML model deployment, monitoring, automation. MLflow, SageMaker, Airflow. Serving transformer and LLM-based models. LangChain, Pinecone. MS Software Engineering, Carnegie Mellon.'},
+];
+
+let candidates=[...SAMPLES.map(s=>({...s,isUpload:false}))];
+let selectedIds=new Set(SAMPLES.map(s=>s.id));
+let provider='openai';
+let jdTab='paste';
+
+// ── Render candidate list ──────────────────────────────────────────────────
+function renderList(){
+  const el=document.getElementById('r-list');
+  el.innerHTML=candidates.map(c=>{
+    const sel=selectedIds.has(c.id);
+    const av=c.ini||(c.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    return `<div class="r-chip ${sel?'selected':''}" onclick="toggleCand('${c.id}')">
+      <input type="checkbox" ${sel?'checked':''} onclick="event.stopPropagation();toggleCand('${c.id}')">
+      <div class="avatar" style="width:28px;height:28px;background:${c.color}22;color:${c.color};border:2px solid ${c.color}">${av}</div>
+      <div style="flex:1;min-width:0">
+        <div class="r-name">${c.name}${c.isUpload?' <span style="font-size:9px;color:var(--green);font-weight:600">↑</span>':''}</div>
+        <div class="r-meta">${c.role||'Uploaded'} ${c.years?'· '+c.years+'y':''}</div>
+      </div>
+      ${c.isUpload?`<button class="r-remove" onclick="removeCand('${c.id}',event)">✕</button>`:''}
+    </div>`;
+  }).join('');
+}
+function toggleCand(id){selectedIds.has(id)?selectedIds.delete(id):selectedIds.add(id);renderList();}
+function removeCand(id,e){e.stopPropagation();candidates=candidates.filter(c=>c.id!==id);selectedIds.delete(id);renderList();}
+renderList();
+
+// ── File upload ────────────────────────────────────────────────────────────
+const COLORS=['#7C3AED','#DC2626','#D97706','#059669','#2563EB','#DB2777','#0891B2'];
+let cidx=0;
+function handleDragOver(e){e.preventDefault();document.querySelector('.drop-zone').classList.add('drag-over');}
+function handleDragLeave(){document.querySelector('.drop-zone').classList.remove('drag-over');}
+function handleDrop(e){e.preventDefault();document.querySelector('.drop-zone').classList.remove('drag-over');processFiles([...e.dataTransfer.files]);}
+function handleFiles(e){processFiles([...e.target.files]);e.target.value='';}
+async function processFiles(files){
+  for(const f of files){
+    const ext=f.name.split('.').pop().toLowerCase();
+    let text='';
+    if(ext==='txt') text=await f.text();
+    else if(ext==='pdf') text=await extractPDF(f);
+    else continue;
+    if(!text.trim()) continue;
+    const id='u_'+Date.now()+'_'+Math.random().toString(36).slice(2,5);
+    const name=f.name.replace(/\.(pdf|txt)$/i,'').replace(/[-_]/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+    const color=COLORS[cidx++%COLORS.length];
+    const ini=name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    candidates.push({id,name,ini,role:'Uploaded',years:null,color,text,isUpload:true});
+    selectedIds.add(id);
+  }
+  renderList();
+}
+async function extractPDF(file){
+  return new Promise(resolve=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      let text='';
+      try{
+        const raw=new TextDecoder('latin1').decode(new Uint8Array(e.target.result));
+        const blocks=raw.match(/BT[\s\S]*?ET/g)||[];
+        for(const b of blocks){
+          const strs=b.match(/\(([^)]{1,300})\)\s*(?:Tj|TJ)/g)||[];
+          for(const s of strs){const inner=s.match(/\(([^)]+)\)/)?.[1]||'';text+=inner.replace(/\\(\d{3})/g,(_,n)=>String.fromCharCode(parseInt(n,8))).replace(/\\n/g,' ')+' ';}
+        }
+        if(text.trim().length<50){const fb=raw.match(/\(([A-Za-z0-9 ,.'"\-:;@+&/]{4,200})\)/g)||[];text=fb.map(m=>m.slice(1,-1)).join(' ');}
+      }catch(_){}
+      resolve(text.trim()||`[Could not parse ${file.name} — paste text manually]`);
+    };
+    r.readAsArrayBuffer(file);
+  });
+}
+
+// ── JD tabs + URL fetch ────────────────────────────────────────────────────
+function setJDTab(t){
+  jdTab=t;
+  document.querySelectorAll('.jd-tab').forEach((el,i)=>el.classList.toggle('active',['paste','url'][i]===t));
+  document.querySelectorAll('.jd-panel').forEach((el,i)=>el.classList.toggle('active',['jdp-paste','jdp-url'][i]===`jdp-${t}`));
+}
+async function fetchJD(){
+  const url=document.getElementById('jd-url-input').value.trim();
+  if(!url){setFS('⚠ Enter a URL first','var(--amber)');return;}
+  const btn=document.getElementById('fetch-btn');
+  btn.disabled=true;btn.textContent='...';
+  setFS('Fetching...','var(--muted)');
+  try{
+    const proxy=`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+    const data=await (await fetch(proxy)).json();
+    const text=extractJD(data.contents||'',url);
+    document.getElementById('jd-fetched').value=text;
+    setFS(`✓ Fetched from ${new URL(url).hostname}`,'var(--green)');
+  }catch{setFS('Could not fetch — paste the JD below','var(--amber)');}
+  btn.disabled=false;btn.textContent='Fetch';
+}
+function extractJD(html,url){
+  let text=html.replace(/<script[\s\S]*?<\/script>/gi,'').replace(/<style[\s\S]*?<\/style>/gi,'').replace(/<[^>]+>/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ').replace(/&#\d+;/g,' ').replace(/\s{3,}/g,'\n\n').trim();
+  const pats=[/(?:job description|about the role|responsibilities|what you.ll do)([\s\S]{200,3000}?)(?:about us|benefits|perks|apply now|\$)/i,/(?:qualifications|requirements|what we.re looking for)([\s\S]{100,2000}?)(?:benefits|about|apply|\$)/i];
+  for(const p of pats){const m=text.match(p);if(m&&m[1].length>150)return m[0].trim().slice(0,3000);}
+  return text.slice(0,2500).trim();
+}
+function setFS(msg,col){const el=document.getElementById('fetch-status');el.textContent=msg;el.style.color=col;}
+function getJD(){return jdTab==='paste'?document.getElementById('jd-text').value.trim():document.getElementById('jd-fetched').value.trim();}
+
+// ── Provider toggle ────────────────────────────────────────────────────────
+function setProvider(p){
+  provider=p;
+  ['openai','anthropic','both'].forEach(x=>{
+    document.getElementById(`btn-${x}`).className='prov-btn'+(p===x?` p-${x}`:'');
+  });
+  document.getElementById('kg-oai').className='key-block'+(p!=='anthropic'?' show':'');
+  document.getElementById('kg-ant').className='key-block'+(p!=='openai'?' show':'');
+}
+
+// ── RAG Engine (Day 7 class methods) ──────────────────────────────────────
+const KW=['python','pytorch','tensorflow','llm','nlp','rag','transformer','bert','gpt','embedding','vector','production','deploy','aws','gcp','cloud','mlops','langchain','huggingface','deep learning','machine learning','sql','research','phd','ms','leadership','team','scikit','pandas','api','kubernetes','docker','chromadb','pinecone','spacy','nltk','sagemaker','fastapi','distributed','semantic','faiss','weaviate','airflow','mlflow','monitoring','xgboost','spark'];
+function splitIntoChunks(t,size=80){const w=t.split(/\s+/),out=[];for(let i=0;i<w.length;i+=size)out.push(w.slice(i,i+size).join(' '));return out.length?out:[t];}
+function modelEncode(t){const l=t.toLowerCase();return KW.map(k=>Math.min((l.match(new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g'))||[]).length/2,1));}
+function cosineSim(a,b){let d=0,ma=0,mb=0;for(let i=0;i<a.length;i++){d+=a[i]*b[i];ma+=a[i]*a[i];mb+=b[i]*b[i];}return(ma&&mb)?d/Math.sqrt(ma)/Math.sqrt(mb):0;}
+function retrieveTopChunks(qe,chunks,k=3){return chunks.map((c,i)=>({c,s:cosineSim(qe,modelEncode(c)),i})).sort((a,b)=>b.s-a.s).slice(0,k).map(r=>r.c).join(' ');}
+function RAG(query,resume){const qe=modelEncode(query);const chunks=splitIntoChunks(resume,80);return{context:retrieveTopChunks(qe,chunks,3),similarity:Math.round(cosineSim(qe,modelEncode(resume))*1000)/10};}
+
+// ── LLM calls (Class 9 / Day 4) ───────────────────────────────────────────
+function buildPrompt(jd,name,ctx,sim){
+  return `INSTRUCTIONS:\nYou are an expert HR talent analyst using a RAG-powered hiring system.\nSimilarity score: ${sim.toFixed(1)}%. Use ONLY the provided resume context.\n\nJob Description:\n${jd}\n\nCandidate: ${name}\nRAG-Retrieved Context:\n${ctx}\n\nRespond ONLY with valid JSON (no markdown):\n{"score":<0-100>,"strengths":"<2-3 sentences>","weaknesses":"<2-3 sentences>","reasoning":"<2-3 sentences>","skill_match":["s1","s2","s3"],"skill_gaps":["g1","g2"],"questions":["Q1?","Q2?","Q3?"]}`;
+}
+async function callOpenAI(prompt,key,model){
+  const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model,temperature:0,max_tokens:1024,messages:[{role:'user',content:prompt}]})});
+  const d=await r.json();if(d.error)throw new Error('OpenAI: '+d.error.message);return d.choices[0].message.content;
+}
+async function callAnthropic(prompt,key,model){
+  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model,max_tokens:1024,messages:[{role:'user',content:prompt}]})});
+  const d=await r.json();if(d.error)throw new Error('Anthropic: '+d.error.message);return d.content[0].text;
+}
+async function analyzeCandidate(jd,cand,prov,key,model){
+  const rag=RAG(jd,cand.text);
+  const prompt=buildPrompt(jd,cand.name,rag.context,rag.similarity);
+  let raw=prov==='openai'?await callOpenAI(prompt,key,model):await callAnthropic(prompt,key,model);
+  let parsed;try{parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());}catch{parsed={score:Math.round(rag.similarity),strengths:'Strong background.',weaknesses:'Some gaps.',reasoning:'Scored by embedding similarity.',skill_match:[],skill_gaps:[],questions:[]};}
+  return{...parsed,...cand,similarity:rag.similarity,rag_context:rag.context,provider:prov};
+}
+
+// ── Run ────────────────────────────────────────────────────────────────────
+const PIPE_STEPS=['Chunk','Embed','Cosine Sim','RAG Retrieve','LLM Score','Done ✓'];
+function setStatus(msg,col='var(--muted)'){const el=document.getElementById('status-msg');el.textContent=msg;el.style.color=col;}
+function updateLoad(msg){const el=document.getElementById('load-txt');if(el)el.textContent=msg;}
+function advPipe(step){PIPE_STEPS.forEach((_,i)=>{const d=document.getElementById('pd'+i);if(d)d.className='pdot'+(i<step?' done':i===step?' active':'');});}
+
+async function runAnalysis(){
+  const jd=getJD(),oaiKey=document.getElementById('oai-key').value.trim(),antKey=document.getElementById('ant-key').value.trim();
+  const oaiModel=document.getElementById('oai-model').value,antModel=document.getElementById('ant-model').value;
+  const sel=candidates.filter(c=>selectedIds.has(c.id));
+  if(!jd){setStatus('⚠ Please enter a job description.','var(--amber)');return;}
+  if(!sel.length){setStatus('⚠ Select at least one candidate.','var(--amber)');return;}
+  if(provider!=='anthropic'&&!oaiKey){setStatus('⚠ OpenAI API key required.','var(--amber)');return;}
+  if(provider!=='openai'&&!antKey){setStatus('⚠ Anthropic API key required.','var(--amber)');return;}
+
+  document.getElementById('run-btn').disabled=true;setStatus('');
+  const provs=provider==='both'?['openai','anthropic']:[provider];
+
+  document.getElementById('right-panel').innerHTML=`<div class="loading-wrap">
+    <div class="spinner"></div>
+    <div class="load-txt" id="load-txt">Initializing RAG pipeline...</div>
+    <div class="pipe-mini" style="margin-top:16px">
+      ${PIPE_STEPS.map((_,i)=>`<div class="pdot" id="pd${i}"></div><span>${PIPE_STEPS[i]}</span>${i<PIPE_STEPS.length-1?'<span style="color:var(--border2)">→</span>':''}`).join('')}
+    </div>
+  </div>`;
+
+  const allResults={};
+  for(const prov of provs){
+    const key=prov==='openai'?oaiKey:antKey,model=prov==='openai'?oaiModel:antModel;
+    const results=[];
+    for(const cand of sel){
+      advPipe(0);updateLoad(`[${prov}] Chunking + embedding: ${cand.name}`);await delay(40);
+      advPipe(2);updateLoad(`[${prov}] Cosine similarity: ${cand.name}`);await delay(40);
+      advPipe(3);updateLoad(`[${prov}] RAG retrieval: ${cand.name}`);await delay(40);
+      advPipe(4);updateLoad(`[${prov}] LLM scoring: ${cand.name}`);
+      try{results.push(await analyzeCandidate(jd,cand,prov,key,model));advPipe(5);}
+      catch(e){results.push({...cand,score:0,similarity:0,strengths:'API Error',weaknesses:e.message.slice(0,200),reasoning:'Call failed.',skill_match:[],skill_gaps:[],questions:[],rag_context:'',provider:prov});}
+    }
+    results.sort((a,b)=>b.score-a.score);
+    allResults[prov]=results;
+  }
+
+  setStatus(`✓ Analyzed ${sel.length} candidate${sel.length>1?'s':''} via ${provs.join(' + ')}`,'var(--green)');
+  document.getElementById('run-btn').disabled=false;
+  renderResults(allResults);
+}
+const delay=ms=>new Promise(r=>setTimeout(r,ms));
+
+// ── Render ─────────────────────────────────────────────────────────────────
+const sc=s=>s>=75?'var(--green)':s>=50?'var(--amber)':'var(--red)';
+const scBg=s=>s>=75?'var(--green-lt)':s>=50?'var(--amber-lt)':'var(--red-lt)';
+const RANKS=['🥇','🥈','🥉','4','5','6','7','8'];
+const RANK_BG=['#FEF9C3','#F1F5F9','#FEF2D9','#F7F9FC','#F7F9FC','#F7F9FC'];
+const RANK_COL=['#A16207','#475569','#92400E','#6B7A99','#6B7A99','#6B7A99'];
+const provC={openai:'var(--openai)',anthropic:'var(--anthropic)'};
+const provBg={openai:'#ECFDF5',anthropic:'#FFF7ED'};
+
+function pipeBar(){
+  return `<div class="pipe-bar">
+    ${PIPE_STEPS.map(s=>`<div class="pipe-dot"></div><span>${s}</span>`).join('<span style="color:var(--border2)">→</span>')}
+    <span style="margin-left:auto;color:var(--green);font-weight:600">Pipeline Complete ✓</span>
+  </div>`;
+}
+function metrics(results){
+  const top=results[0],avgS=Math.round(results.reduce((a,r)=>a+r.score,0)/results.length);
+  const avgM=(results.reduce((a,r)=>a+r.similarity,0)/results.length).toFixed(1);
+  return `<div class="metrics-row">
+    <div class="metric"><div class="m-val" style="color:var(--accent)">${results.length}</div><div class="m-lbl">Candidates</div></div>
+    <div class="metric"><div class="m-val" style="color:${sc(top.score)}">${top.score}</div><div class="m-lbl">Top Score</div></div>
+    <div class="metric"><div class="m-val">${avgS}</div><div class="m-lbl">Avg Score</div></div>
+    <div class="metric"><div class="m-val" style="color:var(--purple)">${avgM}%</div><div class="m-lbl">Avg Similarity</div></div>
+  </div>`;
+}
+function candCard(r,rank){
+  const uid=`c${rank}_${r.provider||'x'}_${r.id}`;
+  const av=r.ini||(r.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const col=r.color||'#2563EB',sc_=sc(r.score),scbg=scBg(r.score);
+  const provPill=r.provider?`<span class="prov-pill" style="background:${provBg[r.provider]};color:${provC[r.provider]}">${r.provider==='openai'?'ChatGPT':'Claude'}</span>`:'';
+  const skillTags=(r.skill_match||[]).map(s=>`<span class="skill-tag" style="background:var(--green-lt);color:var(--green)">${s}</span>`).join('');
+  const gapTags=(r.skill_gaps||[]).map(s=>`<span class="skill-tag" style="background:var(--red-lt);color:var(--red)">${s}</span>`).join('');
+  const qs=(r.questions||[]).map((q,i)=>`<div class="q-item"><span class="q-num" style="background:var(--accent-lt);color:var(--accent)">Q${i+1}</span><span class="q-text">${q}</span></div>`).join('');
+  return `<div class="ccard" id="${uid}" onclick="toggleCard('${uid}')">
+    <div class="ccard-hd">
+      <div class="rank-num" style="background:${RANK_BG[rank]||'#F7F9FC'};color:${RANK_COL[rank]||'#6B7A99'}">${RANKS[rank]||rank+1}</div>
+      <div class="avatar" style="width:40px;height:40px;background:${col}18;color:${col};border:2px solid ${col}">${av}</div>
+      <div class="c-info">
+        <div class="c-name">${r.name} ${provPill}</div>
+        <div class="c-sub">${r.role||'Uploaded'} ${r.years?'· '+r.years+'y':''} · sim ${r.similarity}%</div>
+      </div>
+      <div class="c-score-wrap">
+        <div class="c-score-num" style="color:${sc_}">${r.score}</div>
+        <div class="c-score-lbl">/ 100</div>
+        <div class="sbar-wrap"><div class="sbar-fill" style="width:${r.score}%;background:${sc_}"></div></div>
+      </div>
+    </div>
+    <div class="ccard-body" id="body-${uid}">
+      <div class="two-col">
+        <div class="detail-block"><h4>Strengths</h4><p>${r.strengths||'—'}</p></div>
+        <div class="detail-block"><h4>Weaknesses / Gaps</h4><p>${r.weaknesses||'—'}</p></div>
+      </div>
+      <div class="detail-block" style="margin-bottom:10px"><h4>Reasoning</h4>
+        <div class="reasoning-box" style="border-left:3px solid ${col}">${r.reasoning||'—'}</div>
+      </div>
+      ${skillTags?`<div style="margin-bottom:8px"><div class="detail-block"><h4>Matching Skills</h4></div><div class="tags-wrap">${skillTags}</div></div>`:''}
+      ${gapTags?`<div style="margin-bottom:12px"><div class="detail-block"><h4>Skill Gaps</h4></div><div class="tags-wrap">${gapTags}</div></div>`:''}
+      <div class="detail-block" style="margin-bottom:8px"><h4>Interview Questions</h4></div>
+      <div class="qs-list">${qs||'<span style="color:var(--muted);font-size:12px">—</span>'}</div>
+      ${r.rag_context?`<div class="rag-ctx-wrap"><details><summary>▶ RAG CONTEXT — retrieved chunks</summary><div class="rag-ctx">${r.rag_context.replace(/</g,'&lt;')}</div></details></div>`:''}
+    </div>
+  </div>`;
+}
+function toggleCard(uid){const c=document.getElementById(uid);const b=document.getElementById('body-'+uid);if(!b)return;const o=b.classList.contains('open');b.classList.toggle('open',!o);c.classList.toggle('open',!o);event.stopPropagation();}
+
+function resultsPane(results,prov){
+  const pc=provC[prov]||'var(--accent)',pl=prov==='openai'?'ChatGPT (OpenAI)':'Claude (Anthropic)';
+  return metrics(results)+pipeBar()+
+    `<div style="font-size:10px;color:var(--muted);letter-spacing:.07em;font-weight:600;text-transform:uppercase;margin-bottom:10px">Ranked Candidates <span style="color:${pc};text-transform:none;letter-spacing:0;font-size:11px">● ${pl}</span></div>`+
+    results.map((r,i)=>candCard(r,i)).join('');
+}
+function comparePane(data){
+  const oai=Object.fromEntries((data.openai||[]).map(r=>[r.name,r.score]));
+  const ant=Object.fromEntries((data.anthropic||[]).map(r=>[r.name,r.score]));
+  const names=[...new Set([...Object.keys(oai),...Object.keys(ant)])];
+  const rows=names.map(n=>{const o=oai[n]||0,a=ant[n]||0,d=o-a;const dc=d>0?'var(--openai)':d<0?'var(--anthropic)':'var(--muted)';return `<tr><td>${n}</td><td style="color:var(--openai);font-weight:700">${o}</td><td style="color:var(--anthropic);font-weight:700">${a}</td><td style="color:${dc};font-weight:700">${d>0?'+':''}${d}</td></tr>`;}).join('');
+  return `<div class="cmp-wrap"><div class="slabel" style="margin-bottom:10px">Score Comparison — ChatGPT vs Claude</div>
+    <table class="cmp-table"><thead><tr><th style="text-align:left">Candidate</th><th style="color:var(--openai)">ChatGPT</th><th style="color:var(--anthropic)">Claude</th><th>Δ Diff</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function renderResults(data){
+  const provs=Object.keys(data);
+  let html='';
+  if(provs.length===2){
+    html=`<div class="tabs-bar">
+      <button class="tab-btn active" onclick="switchTab('oai',this)">🟢 ChatGPT (OpenAI)</button>
+      <button class="tab-btn" onclick="switchTab('ant',this)">🟠 Claude (Anthropic)</button>
+      <button class="tab-btn" onclick="switchTab('cmp',this)">⚡ Compare</button>
+    </div>
+    <div class="tab-pane active" id="tab-oai">${resultsPane(data.openai,'openai')}</div>
+    <div class="tab-pane" id="tab-ant">${resultsPane(data.anthropic,'anthropic')}</div>
+    <div class="tab-pane" id="tab-cmp">${comparePane(data)}</div>`;
+  }else{html=resultsPane(data[provs[0]],provs[0]);}
+  document.getElementById('right-panel').innerHTML=html;
+}
+function switchTab(id,btn){
+  const map={oai:'tab-oai',ant:'tab-ant',cmp:'tab-cmp'};
+  Object.values(map).forEach(t=>{const el=document.getElementById(t);if(el)el.classList.toggle('active',t===map[id]);});
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b===btn));
+}
+</script>
+</body>
+</html>
